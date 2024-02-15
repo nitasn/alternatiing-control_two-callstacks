@@ -37,12 +37,12 @@ void init_algorithm_thread() {
   std::thread([] {
     pause_algorithm();
     algorithm();
-
-    std::unique_lock<std::mutex> lock(mtx);
-    algorithm_has_terminated = true;
-
-    main_can_proceed = true;
-    cv_main.notify_one();
+    {
+      std::unique_lock<std::mutex> lock(mtx);
+      algorithm_has_terminated = true;
+      main_can_proceed = true;
+      cv_main.notify_one();
+    }
   }).detach();
 
   std::unique_lock<std::mutex> lock(mtx);
