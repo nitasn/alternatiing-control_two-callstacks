@@ -4,9 +4,8 @@
 #include <condition_variable>
 
 std::mutex mtx;
-std::condition_variable cv_worker, cv_main;
-bool algorithm_can_proceed = false;
-bool main_can_proceed = false;
+std::condition_variable cv_algo, cv_main;
+bool algorithm_can_proceed, main_can_proceed;
 bool algorithm_has_terminated = false;
 
 void algorithm();
@@ -19,33 +18,35 @@ void pause_algorithm() {
   cv_main.notify_one();
 
   algorithm_can_proceed = false;
-  cv_worker.wait(lock, []{ return algorithm_can_proceed; });
+  cv_algo.wait(lock, []{ return algorithm_can_proceed; });
 }
 
 void resume_algorithm() {
   std::unique_lock<std::mutex> lock(mtx);
 
   algorithm_can_proceed = true;
-  cv_worker.notify_one();
+  cv_algo.notify_one();
   
   main_can_proceed = false;
   cv_main.wait(lock, []{ return main_can_proceed; });
 }
 
 void init_algorithm_thread() {
-  auto cleanup = [] {
+  main_can_proceed = false;
+
+  std::thread([] {
+    pause_algorithm();
+    algorithm();
+
     std::unique_lock<std::mutex> lock(mtx);
     algorithm_has_terminated = true;
 
     main_can_proceed = true;
     cv_main.notify_one();
-  };
-
-  std::thread([&cleanup] {
-    pause_algorithm();
-    algorithm();
-    cleanup();
   }).detach();
+
+  std::unique_lock<std::mutex> lock(mtx);
+  cv_main.wait(lock, []{ return main_can_proceed; });
 }
 
 ///////////////////////////////////////////////////////////////////////////
