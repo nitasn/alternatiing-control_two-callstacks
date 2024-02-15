@@ -18,16 +18,16 @@ LINKER_FLAGS :=
 #################################################################
 
 
-PHONY_TARGETS := all run clean help
+PHONY_TARGETS := executable run clean help
 
 .PHONY: $(PHONY_TARGETS)
 
 
-all: $(EXECUTABLE)
+executable: $(EXECUTABLE)
 
 args := # to be overriden from command line (e.g. make run args="arg1 arg2 arg3")
 
-run: all
+run: executable
 	@echo "running $(EXECUTABLE) $(args)"
 	@$(EXECUTABLE) $(args)
 
